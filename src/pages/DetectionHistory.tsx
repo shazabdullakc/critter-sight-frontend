@@ -89,7 +89,7 @@ const DetectionHistory = () => {
         {sortedDetections.length === 0 ? (
           <EmptyDetections />
         ) : (
-          <>
+          <Tabs value={view} onValueChange={(value) => setView(value as "grid" | "table")}>
             <TabsContent value="grid" className="mt-0">
               <DetectionGrid 
                 detections={sortedDetections} 
@@ -103,7 +103,7 @@ const DetectionHistory = () => {
                 onViewDetails={handleDetectionClick}
               />
             </TabsContent>
-          </>
+          </Tabs>
         )}
       </main>
 
