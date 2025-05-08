@@ -11,16 +11,33 @@ import DetectionCard from "@/components/DetectionCard";
 import FeedbackForm from "@/components/FeedbackForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Filter, Image as ImageIcon } from "lucide-react";
+import { Filter, Image as ImageIcon, Calendar } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetTrigger,
+  SheetFooter,
+  SheetDescription
+} from "@/components/ui/sheet";
 
 const DetectionHistory = () => {
   const [confidenceThreshold, setConfidenceThreshold] = useState([70]);
   const [selectedDetection, setSelectedDetection] = useState<string | null>(null);
+  const [detectionDetails, setDetectionDetails] = useState<any>(null);
   const [view, setView] = useState<"grid" | "table">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [animalFilter, setAnimalFilter] = useState("all");
   const [cameraFilter, setCameraFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   // Mock data
   const mockDetections = [
@@ -35,7 +52,7 @@ const DetectionHistory = () => {
   const uniqueAnimalClasses = Array.from(new Set(mockDetections.map(d => d.animalClass)));
   const uniqueCameras = Array.from(new Set(mockDetections.map(d => d.cameraName)));
   
-  // Apply filters
+  // Apply filters including date range
   const filteredDetections = mockDetections.filter(detection => {
     const meetsConfidence = detection.confidence * 100 >= confidenceThreshold[0];
     const meetsAnimal = animalFilter === "all" || detection.animalClass === animalFilter;
@@ -45,18 +62,41 @@ const DetectionHistory = () => {
       detection.cameraName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       detection.id.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // Date filtering would be more complex in a real app
-    const meetsDate = dateFilter === "all" || (
-      dateFilter === "today" && new Date(detection.timestamp).toDateString() === new Date().toDateString()
+    // Date range filtering
+    const detectionDate = new Date(detection.timestamp);
+    const meetsDateRange = (
+      (!startDate || detectionDate >= startDate) && 
+      (!endDate || detectionDate <= endDate)
     );
     
-    return meetsConfidence && meetsAnimal && meetsCamera && meetsSearch && meetsDate;
+    // Legacy date filter option
+    const meetsDateFilter = dateFilter === "all" || (
+      dateFilter === "today" && detectionDate.toDateString() === new Date().toDateString()
+    );
+    
+    return meetsConfidence && meetsAnimal && meetsCamera && meetsSearch && 
+           (dateFilter === "custom" ? meetsDateRange : meetsDateFilter);
   });
   
   // Sort by most recent
   const sortedDetections = [...filteredDetections].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
+
+  const handleDetectionClick = (detection: any) => {
+    setDetectionDetails(detection);
+    setIsSheetOpen(true);
+  };
+
+  const resetFilters = () => {
+    setSearchQuery("");
+    setAnimalFilter("all");
+    setCameraFilter("all");
+    setDateFilter("all");
+    setConfidenceThreshold([70]);
+    setStartDate(undefined);
+    setEndDate(undefined);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,7 +161,7 @@ const DetectionHistory = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <Label htmlFor="date-filter">Date Range</Label>
                 <Select value={dateFilter} onValueChange={setDateFilter}>
@@ -133,6 +173,7 @@ const DetectionHistory = () => {
                     <SelectItem value="today">Today</SelectItem>
                     <SelectItem value="week">This Week</SelectItem>
                     <SelectItem value="month">This Month</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -152,14 +193,69 @@ const DetectionHistory = () => {
               </div>
             </div>
             
+            {dateFilter === 'custom' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <Label htmlFor="start-date">Start Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="start-date"
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "PPP") : <span>Pick a start date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                
+                <div>
+                  <Label htmlFor="end-date">End Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="end-date"
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "PPP") : <span>Pick an end date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        disabled={date => startDate ? date < startDate : false}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            )}
+            
             <div className="flex justify-end mt-4">
-              <Button variant="outline" className="mr-2" onClick={() => {
-                setSearchQuery("");
-                setAnimalFilter("all");
-                setCameraFilter("all");
-                setDateFilter("all");
-                setConfidenceThreshold([70]);
-              }}>
+              <Button variant="outline" className="mr-2" onClick={resetFilters}>
                 Reset Filters
               </Button>
               <Button>
@@ -180,45 +276,16 @@ const DetectionHistory = () => {
           <TabsContent value="grid" className="mt-0">
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {sortedDetections.map((detection) => (
-                <Dialog key={detection.id}>
-                  <DialogTrigger asChild>
-                    <div onClick={() => setSelectedDetection(detection.id)} className="cursor-pointer">
-                      <DetectionCard 
-                        id={detection.id} 
-                        animalClass={detection.animalClass} 
-                        confidence={detection.confidence} 
-                        timestamp={detection.timestamp} 
-                        imageUrl={detection.imageUrl} 
-                        cameraName={detection.cameraName} 
-                      />
-                    </div>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl">
-                    <DialogHeader>
-                      <DialogTitle>Detection Details</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <img 
-                          src={detection.imageUrl} 
-                          alt={`${detection.animalClass} detection`}
-                          className="w-full rounded-md"
-                        />
-                        <div className="mt-4">
-                          <h3 className="font-semibold text-lg">{detection.animalClass}</h3>
-                          <p className="text-sm text-muted-foreground">Detection ID: {detection.id}</p>
-                          <p className="text-sm text-muted-foreground">Camera: {detection.cameraName}</p>
-                          <p className="text-sm text-muted-foreground">Time: {new Date(detection.timestamp).toLocaleString()}</p>
-                          <p className="text-sm text-muted-foreground">Confidence: {(detection.confidence * 100).toFixed(0)}%</p>
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg mb-4">Provide Feedback</h3>
-                        <FeedbackForm detectionId={detection.id} />
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <div key={detection.id} onClick={() => handleDetectionClick(detection)} className="cursor-pointer">
+                  <DetectionCard 
+                    id={detection.id} 
+                    animalClass={detection.animalClass} 
+                    confidence={detection.confidence} 
+                    timestamp={detection.timestamp} 
+                    imageUrl={detection.imageUrl} 
+                    cameraName={detection.cameraName} 
+                  />
+                </div>
               ))}
             </div>
           </TabsContent>
@@ -247,39 +314,17 @@ const DetectionHistory = () => {
                       <td className="p-4">{new Date(detection.timestamp).toLocaleString()}</td>
                       <td className="p-4">{(detection.confidence * 100).toFixed(0)}%</td>
                       <td className="p-4 text-right">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setSelectedDetection(detection.id)}>
-                              <ImageIcon className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-3xl">
-                            <DialogHeader>
-                              <DialogTitle>Detection Details</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div>
-                                <img 
-                                  src={detection.imageUrl} 
-                                  alt={`${detection.animalClass} detection`}
-                                  className="w-full rounded-md"
-                                />
-                                <div className="mt-4">
-                                  <h3 className="font-semibold text-lg">{detection.animalClass}</h3>
-                                  <p className="text-sm text-muted-foreground">Detection ID: {detection.id}</p>
-                                  <p className="text-sm text-muted-foreground">Camera: {detection.cameraName}</p>
-                                  <p className="text-sm text-muted-foreground">Time: {new Date(detection.timestamp).toLocaleString()}</p>
-                                  <p className="text-sm text-muted-foreground">Confidence: {(detection.confidence * 100).toFixed(0)}%</p>
-                                </div>
-                              </div>
-                              <div>
-                                <h3 className="font-semibold text-lg mb-4">Provide Feedback</h3>
-                                <FeedbackForm detectionId={detection.id} />
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDetectionClick(detection);
+                          }}
+                        >
+                          <ImageIcon className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -289,6 +334,66 @@ const DetectionHistory = () => {
           </div>
         </TabsContent>
       </main>
+
+      {/* Side Panel for Detection Details */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent className="sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Detection Details</SheetTitle>
+            <SheetDescription>
+              Full information about this detection event
+            </SheetDescription>
+          </SheetHeader>
+          
+          {detectionDetails && (
+            <div className="py-6">
+              <div className="mb-6">
+                <img 
+                  src={detectionDetails.imageUrl} 
+                  alt={`${detectionDetails.animalClass} detection`}
+                  className="w-full rounded-md object-cover aspect-video"
+                />
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold">{detectionDetails.animalClass}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Detected with {(detectionDetails.confidence * 100).toFixed(0)}% confidence
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium">Detection ID</p>
+                    <p className="text-sm text-muted-foreground">{detectionDetails.id}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Camera</p>
+                    <p className="text-sm text-muted-foreground">{detectionDetails.cameraName}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <p className="text-sm font-medium">Timestamp</p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(detectionDetails.timestamp).toLocaleString()}
+                  </p>
+                </div>
+                
+                <div className="pt-4">
+                  <h3 className="text-lg font-semibold mb-2">Provide Feedback</h3>
+                  <FeedbackForm detectionId={detectionDetails.id} />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <SheetFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsSheetOpen(false)}>Close</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
