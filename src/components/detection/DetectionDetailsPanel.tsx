@@ -26,7 +26,7 @@ interface DetectionDetailsPanelProps {
 const DetectionDetailsPanel = ({ isOpen, setIsOpen, detectionDetails }: DetectionDetailsPanelProps) => {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetContent className="sm:max-w-md">
+      <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Detection Details</SheetTitle>
           <SheetDescription>
@@ -71,8 +71,14 @@ const DetectionDetailsPanel = ({ isOpen, setIsOpen, detectionDetails }: Detectio
               </div>
               
               <div className="pt-4">
-                <h3 className="text-lg font-semibold mb-2">Provide Feedback</h3>
-                <FeedbackForm detectionId={detectionDetails.id} />
+                <h3 className="text-lg font-semibold mb-2">Help Improve Our Model</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Your feedback helps us improve our detection accuracy. Please let us know if this detection was correct or how it could be improved.
+                </p>
+                <FeedbackForm 
+                  detectionId={detectionDetails.id} 
+                  animalClass={detectionDetails.animalClass}
+                />
               </div>
             </div>
           </div>
