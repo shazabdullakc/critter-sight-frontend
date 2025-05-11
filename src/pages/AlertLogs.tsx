@@ -168,7 +168,7 @@ const AlertLogs = () => {
                         <TableCell>{formatDate(log.timestamp)}</TableCell>
                         <TableCell>
                           {log.status === "delivered" ? (
-                            <Badge variant="success" className="bg-green-600">Delivered</Badge>
+                            <Badge variant="default" className="bg-green-600">Delivered</Badge>
                           ) : (
                             <Badge variant="destructive">Failed</Badge>
                           )}
