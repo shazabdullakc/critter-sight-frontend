@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { 
   Table, 
@@ -12,7 +13,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Mail, Phone, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Mail, Phone, Calendar, Settings } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Mock data for alert logs
@@ -87,7 +89,15 @@ const AlertLogs = () => {
       <Navbar isAuthenticated={true} />
       
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-primary mb-6">Alert Logs</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-primary">Alert Logs</h1>
+          <Button variant="outline" asChild>
+            <Link to="/settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Configure Alerts
+            </Link>
+          </Button>
+        </div>
         
         <Card className="mb-6">
           <CardHeader className="pb-3">
