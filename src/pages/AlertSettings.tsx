@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { Mail, Phone, Bell } from "lucide-react";
+import { Mail, Phone, Bell, History } from "lucide-react";
 
 const AlertSettings = () => {
   const [confidenceThreshold, setConfidenceThreshold] = useState([85]);
@@ -69,7 +69,15 @@ const AlertSettings = () => {
       <Navbar isAuthenticated={true} />
       
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-primary mb-6">Alert Settings</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-primary">Alert Settings</h1>
+          <Button variant="outline" asChild>
+            <Link to="/alert-logs" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              View Alert Logs
+            </Link>
+          </Button>
+        </div>
         
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2 space-y-6">
